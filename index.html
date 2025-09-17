@@ -48,7 +48,7 @@
     <div class="container mx-auto p-4 md:p-8 max-w-4xl">
         <header class="text-center mb-8 flex flex-col items-center">
             <!-- Iran Alumina Company Logo -->
-            <img src="Logo.png" alt="لوگوی شرکت آلومینای ایران" class="h-[42px] w-[42px] mb-4 object-contain" onerror="this.src='https://placehold.co/42x42/cccccc/ffffff?text=IAC'">
+            <img src="https://www.iranalumina.ir/Files/HeaderLogo.png" alt="لوگوی شرکت آلومینای ایران" class="h-[42px] w-[42px] mb-4 object-contain" onerror="this.src='https://placehold.co/42x42/cccccc/ffffff?text=IAC'">
             <h1 class="text-2xl font-bold text-gray-800">شرکت آلومینای ایران</h1>
             <p class="text-lg text-gray-600">جاجرم</p>
             <hr class="w-48 my-4 border-gray-300">
@@ -71,6 +71,7 @@
                             <option value="morning">شیفت صبح</option>
                             <option value="evening">شیفت عصر</option>
                             <option value="night">شیفت شب</option>
+                            <option value="change_shift">چنج شیفت</option>
                             <option value="rest">استراحت</option>
                             <option value="holiday">روز تعطیل</option>
                         </select>
@@ -117,10 +118,11 @@
                     </div>
                 </div>
 
-                 <!-- Excel Buttons -->
-                <div class="flex flex-col md:flex-row gap-4 mb-6">
-                    <button id="export-btn" class="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">خروجی اکسل</button>
-                    <button id="import-btn" class="flex-1 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition">ورود از اکسل</button>
+                 <!-- Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <button id="export-btn" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">خروجی اکسل</button>
+                    <button id="import-btn" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition">ورود از اکسل</button>
+                    <button id="delete-all-btn" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition">حذف تمام سوابق</button>
                     <input type="file" id="import-file" class="hidden" accept=".xlsx, .xls, .csv">
                 </div>
 
@@ -153,18 +155,18 @@
         
         <footer class="text-center mt-12 text-gray-500 text-sm">
             <p>طراحی و توسعه جواد ابراهیمی توسط هوش مصنوعی Gemini</p>
-            <p class="mt-1">نسخه 1.8.0</p>
+            <p class="mt-1">نسخه 1.9.0</p>
         </footer>
     </div>
 
     <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden modal-backdrop">
+    <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 modal-backdrop">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
             <h3 class="text-lg font-bold text-gray-800 mb-4" id="modal-title">تایید عملیات</h3>
             <p class="text-gray-600 mb-6" id="modal-body">آیا از انجام این کار مطمئن هستید؟</p>
             <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <button id="modal-cancel-btn" class="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">انصراف</button>
-                <button id="modal-confirm-btn" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">تایید و حذف</button>
+                <button id="modal-confirm-btn" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">تایید</button>
             </div>
         </div>
     </div>
@@ -204,11 +206,12 @@
             const exportBtn = document.getElementById('export-btn');
             const importBtn = document.getElementById('import-btn');
             const importFile = document.getElementById('import-file');
+            const deleteAllBtn = document.getElementById('delete-all-btn');
 
             // --- State and Config ---
             let overtimeData = JSON.parse(localStorage.getItem('overtimeData')) || [];
             let confirmCallback = null;
-            const shiftTypeMap = { morning: 'شیفت صبح', evening: 'شیفت عصر', night: 'شیفت شب', rest: 'استراحت', holiday: 'روز تعطیل' };
+            const shiftTypeMap = { morning: 'شیفت صبح', evening: 'شیفت عصر', night: 'شیفت شب', change_shift: 'چنج شیفت', rest: 'استراحت', holiday: 'روز تعطیل' };
             const shiftTypeMapReverse = Object.fromEntries(Object.entries(shiftTypeMap).map(([k, v]) => [v, k]));
 
 
@@ -260,11 +263,15 @@
                 setTimeout(() => errorMessage.classList.add('hidden'), 5000);
             };
 
-            const showConfirmModal = (message, onConfirm) => {
+            const showConfirmModal = (message, onConfirm, actionText = 'تایید و حذف') => {
                 modalBody.textContent = message;
+                modalConfirmBtn.textContent = actionText;
                 confirmCallback = onConfirm;
                 confirmModal.classList.remove('hidden');
-                confirmModal.classList.add('opacity-100');
+                // Use a short timeout to allow the display property to apply before starting the transition
+                setTimeout(() => {
+                    confirmModal.classList.remove('opacity-0');
+                }, 10);
             };
 
             const hideConfirmModal = () => {
@@ -272,7 +279,7 @@
                 setTimeout(() => {
                     confirmModal.classList.add('hidden');
                     confirmCallback = null;
-                }, 300);
+                }, 300); // Must match transition duration
             };
             
              // --- Excel Functions ---
@@ -340,90 +347,4 @@
                            overtimeData = Object.values(currentDataMap);
                            saveData();
                            renderRecords();
-                        } else {
-                           showError("هیچ رکورد معتبری در فایل اکسل برای ورود یافت نشد. مطمئن شوید ستون 'تاریخ' با فرمت صحیح وجود دارد.");
-                        }
-
-                    } catch (err) {
-                        showError("خطا در پردازش فایل اکسل. لطفاً از صحت فایل اطمینان حاصل کنید.");
-                        console.error(err);
-                    } finally {
-                        importFile.value = ''; 
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            };
-
-            // --- Event Handlers ---
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const date = dateInput.value.trim();
-                const startTime = startTimeSelect.value;
-                const startHour = parseInt(startTime);
-                const endTime = endTimeSelect.value;
-                const description = descriptionInput.value.trim();
-                const shiftType = shiftTypeSelect.value;
-                const successor = successorInput.value.trim();
-
-                if (!date || !moment(date, 'jYYYY/jMM/jDD', true).isValid()) {
-                    return showError('لطفاً تاریخ را با فرمت صحیح (مثال: 1403/06/22) وارد کنید.');
-                }
-                if (startTime === endTime) {
-                    return showError('ساعت شروع و پایان نمی‌تواند یکسان باشد.');
-                }
-
-                if ((shiftType === 'morning' && startHour < 16) ||
-                    (shiftType === 'evening' && startHour >= 15 && startHour <= 23) ||
-                    (shiftType === 'night' && (startHour >= 23 || startHour <= 7))) {
-                    return showError('ساعت اضافه کاری با نوع شیفت انتخاب شده مغایرت دارد.');
-                }
-                
-                const existingRecordIndex = overtimeData.findIndex(record => record.date === date);
-                const newRecord = { date, startTime, endTime, description, shiftType, successor };
-
-                if (existingRecordIndex > -1) overtimeData[existingRecordIndex] = newRecord;
-                else overtimeData.push(newRecord);
-
-                saveData();
-                renderRecords();
-                form.reset();
-                dateInput.value = moment().locale('fa').format('YYYY/MM/DD');
-            });
-            
-            recordsBody.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const dateToDelete = e.target.dataset.date;
-                    showConfirmModal(`آیا از حذف اضافه کاری تاریخ ${dateToDelete} مطمئن هستید؟`, () => {
-                        overtimeData = overtimeData.filter(record => record.date !== dateToDelete);
-                        saveData();
-                        renderRecords();
-                        hideConfirmModal();
-                    });
-                }
-            });
-
-            // --- Setup and Initial Load ---
-            const init = () => {
-                for (let i = 1; i <= 24; i++) {
-                    startTimeSelect.add(new Option(`${i}:00`, i));
-                    endTimeSelect.add(new Option(`${i}:00`, i));
-                }
-                dateInput.value = moment().locale('fa').format('YYYY/MM/DD');
-                renderRecords();
-                todayBtn.addEventListener('click', () => dateInput.value = moment().locale('fa').format('YYYY/MM/DD'));
-                modalConfirmBtn.addEventListener('click', () => { if (confirmCallback) confirmCallback(); });
-                modalCancelBtn.addEventListener('click', hideConfirmModal);
-                confirmModal.addEventListener('click', (e) => { if(e.target === confirmModal) hideConfirmModal(); });
-                exportBtn.addEventListener('click', exportToExcel);
-                importBtn.addEventListener('click', () => importFile.click());
-                importFile.addEventListener('change', importFromExcel);
-            };
-
-            init();
-        });
-    </script>
-
-</body>
-</html>
-
+                        } e
