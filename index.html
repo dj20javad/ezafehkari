@@ -119,12 +119,14 @@
                 </div>
 
                  <!-- Controls -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                     <button id="export-btn" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">خروجی اکسل</button>
                     <button id="import-btn" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition">ورود از اکسل</button>
                     <button id="delete-all-btn" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition">حذف تمام سوابق</button>
                     <input type="file" id="import-file" class="hidden" accept=".xlsx, .xls, .csv">
                 </div>
+                <p class="text-center text-xs text-gray-500 mb-6">(پیشنهاد می‌شود برای جلوگیری از حذف ناخواسته اطلاعات، به صورت هفتگی خروجی اکسل بگیرید)</p>
+
 
                 <div id="alert-message" class="hidden p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-100" role="alert">
                     <span class="font-medium">توجه!</span> مجموع ساعات اضافه کاری شما از ۱۲۰ ساعت عبور کرده است.
@@ -155,7 +157,7 @@
         
         <footer class="text-center mt-12 text-gray-500 text-sm">
             <p>طراحی و توسعه جواد ابراهیمی توسط هوش مصنوعی Gemini</p>
-            <p class="mt-1">نسخه 1.9.0</p>
+            <p class="mt-1">نسخه 1.9.1</p>
         </footer>
     </div>
 
@@ -268,7 +270,6 @@
                 modalConfirmBtn.textContent = actionText;
                 confirmCallback = onConfirm;
                 confirmModal.classList.remove('hidden');
-                // Use a short timeout to allow the display property to apply before starting the transition
                 setTimeout(() => {
                     confirmModal.classList.remove('opacity-0');
                 }, 10);
@@ -279,7 +280,7 @@
                 setTimeout(() => {
                     confirmModal.classList.add('hidden');
                     confirmCallback = null;
-                }, 300); // Must match transition duration
+                }, 300); 
             };
             
              // --- Excel Functions ---
@@ -347,5 +348,104 @@
                            overtimeData = Object.values(currentDataMap);
                            saveData();
                            renderRecords();
-                        } e
+                        } else {
+                           showError("هیچ رکورد معتبری در فایل اکسل برای ورود یافت نشد. مطمئن شوید ستون 'تاریخ' با فرمت صحیح وجود دارد.");
+                        }
+
+                    } catch (err) {
+                        showError("خطا در پردازش فایل اکسل. لطفاً از صحت فایل اطمینان حاصل کنید.");
+                        console.error(err);
+                    } finally {
+                        importFile.value = ''; 
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            // --- Event Handlers ---
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const date = dateInput.value.trim();
+                const startTime = startTimeSelect.value;
+                const startHour = parseInt(startTime);
+                const endTime = endTimeSelect.value;
+                const description = descriptionInput.value.trim();
+                const shiftType = shiftTypeSelect.value;
+                const successor = successorInput.value.trim();
+
+                if (!date || !moment(date, 'jYYYY/jMM/jDD', true).isValid()) {
+                    return showError('لطفاً تاریخ را با فرمت صحیح (مثال: 1403/06/22) وارد کنید.');
+                }
+                if (startTime === endTime) {
+                    return showError('ساعت شروع و پایان نمی‌تواند یکسان باشد.');
+                }
+
+                if ((shiftType === 'morning' && startHour < 16) ||
+                    (shiftType === 'evening' && startHour >= 15 && startHour <= 23) ||
+                    (shiftType === 'night' && (startHour >= 23 || startHour <= 7))) {
+                    return showError('ساعت اضافه کاری با نوع شیفت انتخاب شده مغایرت دارد.');
+                }
+                
+                const existingRecordIndex = overtimeData.findIndex(record => record.date === date);
+                const newRecord = { date, startTime, endTime, description, shiftType, successor };
+
+                if (existingRecordIndex > -1) overtimeData[existingRecordIndex] = newRecord;
+                else overtimeData.push(newRecord);
+
+                saveData();
+                renderRecords();
+                form.reset();
+                dateInput.value = moment().locale('fa').format('YYYY/MM/DD');
+            });
+            
+            recordsBody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const dateToDelete = e.target.dataset.date;
+                    showConfirmModal(`آیا از حذف اضافه کاری تاریخ ${dateToDelete} مطمئن هستید؟`, () => {
+                        overtimeData = overtimeData.filter(record => record.date !== dateToDelete);
+                        saveData();
+                        renderRecords();
+                        hideConfirmModal();
+                    });
+                }
+            });
+
+            deleteAllBtn.addEventListener('click', () => {
+                if (overtimeData.length === 0) {
+                    showError("هیچ سابقه‌ای برای حذف وجود ندارد.");
+                    return;
+                }
+                showConfirmModal("آیا از حذف تمام سوابق مطمئن هستید؟ این عمل غیرقابل بازگشت است.", () => {
+                    overtimeData = [];
+                    saveData();
+                    renderRecords();
+                    hideConfirmModal();
+                }, 'بله، همه را حذف کن');
+            });
+
+            // --- Setup and Initial Load ---
+            const init = () => {
+                for (let i = 1; i <= 24; i++) {
+                    startTimeSelect.add(new Option(`${i}:00`, i));
+                    endTimeSelect.add(new Option(`${i}:00`, i));
+                }
+                dateInput.value = moment().locale('fa').format('YYYY/MM/DD');
+                renderRecords();
+                todayBtn.addEventListener('click', () => dateInput.value = moment().locale('fa').format('YYYY/MM/DD'));
+                modalConfirmBtn.addEventListener('click', () => { if (confirmCallback) confirmCallback(); });
+                modalCancelBtn.addEventListener('click', hideConfirmModal);
+                confirmModal.addEventListener('click', (e) => { if(e.target === confirmModal) hideConfirmModal(); });
+                exportBtn.addEventListener('click', exportToExcel);
+                importBtn.addEventListener('click', () => importFile.click());
+                importFile.addEventListener('change', importFromExcel);
+            };
+
+            init();
+        });
+    </script>
+
+</body>
+</html>
+
 
