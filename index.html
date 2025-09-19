@@ -7,7 +7,7 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4a9e2">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4a90e2/ffffff?text=App">
+    <link rel="apple-touch-icon" href="./logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
     
     <!-- Kama Datepicker CSS from CDN -->
-    <link href="https://unpkg.com/kamadatepicker/dist/kamadatepicker.min.css" rel="stylesheet" />
+    <link href="./kamadatepicker.min.css" rel="stylesheet" />
     
     <style>
         body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
@@ -32,19 +32,19 @@
     </style>
     
     <!-- External Libraries -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/kamadatepicker/dist/kamadatepicker.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
-    <script src="https://unpkg.com/jalali-moment/dist/jalali-moment.browser.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="./jquery-3.6.0.min.js"></script>
+    <script src="./kamadatepicker.min.js"></script>
+    <script src="./moment.min.js"></script>
+    <script src="./moment-timezone-with-data.min.js"></script>
+    <script src="./jalali-moment.browser.js"></script>
+    <script src="./xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
     <!-- Main Application View -->
     <div id="app-view" class="container mx-auto p-4 md:p-8 max-w-4xl hidden-view">
         <header class="text-center mb-8 flex flex-col items-center">
-            <img src="https://www.iranalumina.ir/Files/HeaderLogo.png" alt="لوگوی شرکت آلومینای ایران" class="h-[42px] w-[42px] mb-4 object-contain" onerror="this.src='https://placehold.co/42x42/cccccc/ffffff?text=IAC'">
+            <img src="./Logo.png" alt="لوگوی شرکت آلومینای ایران" class="h-[42px] w-[42px] mb-4 object-contain" onerror="this.src='https://placehold.co/42x42/cccccc/ffffff?text=IAC'">
             <h1 class="text-2xl font-bold text-gray-800">شرکت آلومینای ایران</h1>
             <p class="text-lg text-gray-600">جاجرم</p>
         </header>
@@ -128,7 +128,7 @@
         <footer class="text-center mt-12 text-gray-500 text-sm">
             <button id="change-settings-btn" class="text-blue-600 hover:underline mb-4">تغییر تنظیمات شیفت</button>
             <p>طراحی و توسعه جواد ابراهیمی توسط هوش مصنوعی Gemini</p>
-            <p class="mt-1">نسخه 1.9.4 (پایداری نهایی)</p>
+            <p class="mt-1">نسخه 1.9.4)</p>
         </footer>
     </div>
 
@@ -189,14 +189,22 @@
 
     <!-- Main Application Script -->
     <script>
-        window.addEventListener('load', () => {
+        document.addEventListener('DOMContentLoaded', () => {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
+                });
             }
 
             try {
                 // --- Timezone Helper ---
-                const getTehranMoment = (date, format) => moment.tz(date, format, "Asia/Tehran");
+                const getTehranMoment = (date, format) => {
+                    if (typeof moment.tz !== 'function') {
+                        console.error("Moment Timezone library not loaded correctly.");
+                        return moment(date, format); // Fallback to local moment
+                    }
+                    return moment.tz(date, format, "Asia/Tehran");
+                }
 
                 // --- Element & State Initialization ---
                 const $ = id => document.getElementById(id);
@@ -296,8 +304,7 @@
                     if (overtimeData.length === 0) return showError("هیچ داده‌ای برای خروجی گرفتن وجود ندارد.");
                     const dataToExport = overtimeData.map(rec => ({
                         'تاریخ': rec.date, 'نوع شیفت': shiftTypeMap[rec.shiftType] || '', 'جانشین': rec.successor || '',
-                        'ساعت شروع': String(rec.startTime), 'ساعت پایان': String(rec.endTime), 
-                        'توضیحات': rec.description || ''
+                        'ساعت شروع': rec.startTime, 'ساعت پایان': rec.endTime, 'توضیحات': rec.description || ''
                     }));
                     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
                     const workbook = XLSX.utils.book_new();
@@ -326,10 +333,8 @@
                                 if(moment(dateStr, 'jYYYY/jMM/DD', true).isValid()) {
                                     currentDataMap[dateStr] = {
                                         date: dateStr, shiftType: shiftTypeMapReverse[row['نوع شیفت']] || 'holiday',
-                                        successor: String(row['جانشین'] || '').trim(), 
-                                        startTime: String(row['ساعت شروع'] || '1'),
-                                        endTime: String(row['ساعت پایان'] || '1'), 
-                                        description: String(row['توضیحات'] || '').trim(),
+                                        successor: String(row['جانشین'] || '').trim(), startTime: String(row['ساعت شروع'] || '1').trim(),
+                                        endTime: String(row['ساعت پایان'] || '1').trim(), description: String(row['توضیحات'] || '').trim(),
                                     };
                                     importedCount++;
                                 }
@@ -360,8 +365,8 @@
                             <td class="p-4 text-sm">${rec.date}</td>
                             <td class="p-4 text-sm">${shiftTypeMap[rec.shiftType] || ''}</td>
                             <td class="p-4 text-sm hidden md:table-cell">${rec.successor || '-'}</td>
-                            <td class="p-4 text-sm">${rec.startTime}:00</td>
-                            <td class="p-4 text-sm">${rec.endTime}:00</td>
+                            <td class="p-4 text-sm">${String(rec.startTime).replace('.5', ':30')}</td>
+                            <td class="p-4 text-sm">${String(rec.endTime).replace('.5', ':30')}</td>
                             <td class="p-4 text-sm font-medium">${calculateDuration(rec.startTime, rec.endTime)} ساعت</td>
                             <td class="p-4 text-sm"><button data-date="${rec.date}" class="delete-btn text-red-500 hover:underline">حذف</button></td>
                         `;
@@ -421,10 +426,10 @@
                     }
                 };
 
-                const populateTimeOptions = () => {
+const populateTimeOptions = () => {
                     const startTimeSelect = $('start-time');
                     const endTimeSelect = $('end-time');
-                    if (startTimeSelect.options.length > 0) return;
+                    if (startTimeSelect.options.length > 0) return; // Populate only once
 
                     for (let i = 1; i <= 24; i++) {
                         startTimeSelect.add(new Option(`${i}:00`, i));
@@ -440,7 +445,7 @@
                         const s = parseFloat(start);
                         const e = parseFloat(end);
                         if (s < e) return [[s, e]];
-                        return [[s, 24.5], [0, e]]; 
+                        return [[s, 24.5], [0, e]]; // Use 24.5 to include midnight correctly
                     };
 
                     const rangesOverlap = (ranges1, ranges2) => {
