@@ -7,7 +7,7 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4a9e2">
-    <link rel="apple-touch-icon" href="./logo.png">
+    <link rel="apple-touch-icon" href="./Logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -128,7 +128,7 @@
         <footer class="text-center mt-12 text-gray-500 text-sm">
             <button id="change-settings-btn" class="text-blue-600 hover:underline mb-4">تغییر تنظیمات شیفت</button>
             <p>طراحی و توسعه جواد ابراهیمی توسط هوش مصنوعی Gemini</p>
-            <p class="mt-1">نسخه 1.9.4</p>
+            <p class="mt-1">نسخه 10.0.1 (پایداری نهایی)</p>
         </footer>
     </div>
 
@@ -189,11 +189,9 @@
 
     <!-- Main Application Script -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('load', () => {
             if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
-                });
+                navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
             }
 
             try {
@@ -201,7 +199,7 @@
                 const getTehranMoment = (date, format) => {
                     if (typeof moment.tz !== 'function') {
                         console.error("Moment Timezone library not loaded correctly.");
-                        return moment(date, format); // Fallback to local moment
+                        return moment(date, format); // Fallback
                     }
                     return moment.tz(date, format, "Asia/Tehran");
                 }
@@ -211,8 +209,8 @@
                 const appView = $('app-view');
                 const settingsView = $('settings-view');
                 const confirmModal = $('confirm-modal');
-                let overtimeData = JSON.parse(localStorage.getItem('overtime_data_v9')) || [];
-                let userSettings = JSON.parse(localStorage.getItem('overtime_settings_v9')) || null;
+                let overtimeData = JSON.parse(localStorage.getItem('overtime_data_v10')) || [];
+                let userSettings = JSON.parse(localStorage.getItem('overtime_settings_v10')) || null;
                 let confirmCallback = null;
                 const shiftTypeMap = { 'morning': 'شیفت صبح', 'evening': 'شیفت عصر', 'night': 'شیفت شب', 'rest': 'استراحت', 'holiday': 'روز تعطیل', 'change_shift': 'چنج شیفت' };
 
@@ -275,8 +273,8 @@
                 };
 
                 // --- Core Functions ---
-                const saveData = () => localStorage.setItem('overtime_data_v9', JSON.stringify(overtimeData));
-                const saveSettings = () => localStorage.setItem('overtime_settings_v9', JSON.stringify(userSettings));
+                const saveData = () => localStorage.setItem('overtime_data_v10', JSON.stringify(overtimeData));
+                const saveSettings = () => localStorage.setItem('overtime_settings_v10', JSON.stringify(userSettings));
                 const calculateDuration = (s, e) => (parseFloat(e) > parseFloat(s)) ? (e - s) : (24 - s + parseFloat(e));
                 const showError = (msg) => { $('error-message').textContent = msg; $('error-message').classList.remove('hidden'); setTimeout(() => $('error-message').classList.add('hidden'), 5000); };
                 
@@ -301,10 +299,11 @@
                 
                 // --- Excel Functions ---
                 const exportToExcel = () => {
-                    if (overtimeData.length === 0) return showError("هیچ داده‌ای برای خروجی گرفتن وجود ندارد.");
+                    if (overtimeData.length === 0) return showModal("خطا", "هیچ داده‌ای برای خروجی گرفتن وجود ندارد.");
                     const dataToExport = overtimeData.map(rec => ({
                         'تاریخ': rec.date, 'نوع شیفت': shiftTypeMap[rec.shiftType] || '', 'جانشین': rec.successor || '',
-                        'ساعت شروع': rec.startTime, 'ساعت پایان': rec.endTime, 'توضیحات': rec.description || ''
+                        'ساعت شروع': rec.startTime, 'ساعت پایان': rec.endTime, 
+                        'توضیحات': rec.description || ''
                     }));
                     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
                     const workbook = XLSX.utils.book_new();
@@ -322,7 +321,7 @@
                             const workbook = XLSX.read(data, { type: 'array' });
                             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                             const importedJson = XLSX.utils.sheet_to_json(worksheet);
-                            if(importedJson.length === 0) return showError("فایل اکسل خالی است.");
+                            if(importedJson.length === 0) return showModal("خطا","فایل اکسل خالی است.");
                             
                             const shiftTypeMapReverse = Object.fromEntries(Object.entries(shiftTypeMap).map(([k, v]) => [v, k]));
                             const currentDataMap = overtimeData.reduce((map, item) => (map[item.date] = item, map), {});
@@ -333,8 +332,10 @@
                                 if(moment(dateStr, 'jYYYY/jMM/DD', true).isValid()) {
                                     currentDataMap[dateStr] = {
                                         date: dateStr, shiftType: shiftTypeMapReverse[row['نوع شیفت']] || 'holiday',
-                                        successor: String(row['جانشین'] || '').trim(), startTime: String(row['ساعت شروع'] || '1').trim(),
-                                        endTime: String(row['ساعت پایان'] || '1').trim(), description: String(row['توضیحات'] || '').trim(),
+                                        successor: String(row['جانشین'] || '').trim(), 
+                                        startTime: String(row['ساعت شروع'] || '1').split(':')[0],
+                                        endTime: String(row['ساعت پایان'] || '1').split(':')[0], 
+                                        description: String(row['توضیحات'] || '').trim(),
                                     };
                                     importedCount++;
                                 }
@@ -345,8 +346,8 @@
                                saveData();
                                renderRecords();
                                showModal('موفق', `${importedCount} رکورد وارد شد.`);
-                            } else { showError("هیچ رکورد معتبری یافت نشد."); }
-                        } catch (err) { showError("خطا در پردازش فایل اکسل."); console.error(err); } 
+                            } else { showModal("خطا", "هیچ رکورد معتبری یافت نشد."); }
+                        } catch (err) { showModal("خطا", "خطا در پردازش فایل اکسل."); console.error(err); } 
                         finally { $('import-file').value = ''; }
                     };
                     reader.readAsArrayBuffer(file);
@@ -365,8 +366,8 @@
                             <td class="p-4 text-sm">${rec.date}</td>
                             <td class="p-4 text-sm">${shiftTypeMap[rec.shiftType] || ''}</td>
                             <td class="p-4 text-sm hidden md:table-cell">${rec.successor || '-'}</td>
-                            <td class="p-4 text-sm">${String(rec.startTime).replace('.5', ':30')}</td>
-                            <td class="p-4 text-sm">${String(rec.endTime).replace('.5', ':30')}</td>
+                            <td class="p-4 text-sm">${rec.startTime}:00</td>
+                            <td class="p-4 text-sm">${rec.endTime}:00</td>
                             <td class="p-4 text-sm font-medium">${calculateDuration(rec.startTime, rec.endTime)} ساعت</td>
                             <td class="p-4 text-sm"><button data-date="${rec.date}" class="delete-btn text-red-500 hover:underline">حذف</button></td>
                         `;
@@ -426,10 +427,10 @@
                     }
                 };
 
-const populateTimeOptions = () => {
+                const populateTimeOptions = () => {
                     const startTimeSelect = $('start-time');
                     const endTimeSelect = $('end-time');
-                    if (startTimeSelect.options.length > 0) return; // Populate only once
+                    if (startTimeSelect.options.length > 0) return;
 
                     for (let i = 1; i <= 24; i++) {
                         startTimeSelect.add(new Option(`${i}:00`, i));
@@ -445,7 +446,7 @@ const populateTimeOptions = () => {
                         const s = parseFloat(start);
                         const e = parseFloat(end);
                         if (s < e) return [[s, e]];
-                        return [[s, 24.5], [0, e]]; // Use 24.5 to include midnight correctly
+                        return [[s, 24.5], [0, e]]; 
                     };
 
                     const rangesOverlap = (ranges1, ranges2) => {
@@ -605,4 +606,5 @@ const populateTimeOptions = () => {
     </script>
 </body>
 </html>
+
 
