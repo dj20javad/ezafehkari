@@ -1,23 +1,18 @@
 {
-  "name": "سامانه ثبت اضافه کاری",
-  "short_name": "اضافه کاری",
-  "description": "یک وب اپلیکیشن ساده برای ثبت و مدیریت ساعات اضافه کاری.",
-  "start_url": ".",
+  "background_color": "#ffffff",
+  "dir": "ltr",
   "display": "standalone",
-  "background_color": "#f3f4f6",
-  "theme_color": "#4a90e2",
+  "name": "Ezafeh Kari",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "ezafehkari.netlify",
+  "start_url": "/",
+  "theme_color": "#00dcff",
   "icons": [
     {
-      "src": "./logo.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "./logo.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "https://ezafehkari.netlify.app/Logo.png"
     }
-  ]
+  ],
+  "description": "ثبت هوشمند اضافه کاری",
+  "lang": "en"
 }
-
-
