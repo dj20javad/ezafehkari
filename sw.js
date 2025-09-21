@@ -1,4 +1,4 @@
-const CACHE_NAME = 'overtime-app-cache-v1.9.4'; // New major version
+const CACHE_NAME = 'overtime-app-cache-v1.9.5'; // Incremented version
 const urlsToCache = [
   '/',
   'index.html',
@@ -61,5 +61,4 @@ self.addEventListener('fetch', event => {
     );
   }
 });
-
 
