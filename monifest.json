@@ -5,12 +5,14 @@
   "name": "Ezafeh Kari",
   "orientation": "any",
   "scope": "/",
-  "short_name": "ezafehkari.netlify",
-  "start_url": "/",
-  "theme_color": "#00dcff",
+  "short_name": "ezafeh.kari.netlify",
+  "start_url": "/index.html",
+  "theme_color": "#008cff",
   "icons": [
     {
-      "src": "https://ezafehkari.netlify.app/Logo.png"
+      "src": "https://ezafehkari.netlify.app/Logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
   "description": "ثبت هوشمند اضافه کاری",
