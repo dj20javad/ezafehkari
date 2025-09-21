@@ -1,15 +1,22 @@
 {
-  "short_name": "EKA",
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
   "name": "Ezafeh Kari Alumina",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "EKA",
+  "start_url": "/index.html",
+  "theme_color": "#007bff",
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "https://ezafehkari.netlify.app/Logo.png"
     }
   ],
-  "start_url": "./index.html",
-  "display": "standalone",
-  "theme_color": "black",
-  "background_color": "white"
+  "id": "ezafeh.kari.alumina",
+  "description": "ثبت هوشمند اضافه کاری",
+  "lang": "en",
+  "categories": [
+    "business"
+  ]
 }
