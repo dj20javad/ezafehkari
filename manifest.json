@@ -5,7 +5,7 @@
   "name": "Ezafeh Kari",
   "orientation": "any",
   "scope": "/",
-  "short_name": "ezafeh.kari.netlify",
+  "short_name": "ezafeh.kari.alumina",
   "start_url": "/index.html",
   "theme_color": "#008cff",
   "icons": [
@@ -16,5 +16,9 @@
     }
   ],
   "description": "ثبت هوشمند اضافه کاری",
-  "lang": "en"
+  "lang": "en",
+  "id": "ezafeh.kari.alumina",
+  "categories": [
+    "business"
+  ]
 }
