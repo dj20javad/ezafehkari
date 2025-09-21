@@ -26,3 +26,11 @@
     "business"
   ]
 }
+"screenshots" : [
+  {
+    "src": "screenshot.jpg",
+    "sizes": "1080x2328",
+    "type": "image/jpg",
+    "platform": "wide",
+  }
+]
