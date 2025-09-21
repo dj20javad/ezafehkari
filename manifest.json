@@ -16,9 +16,9 @@
       "isWebp": false,
       "isJpg": false,
       "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "is512x512": true,
+      "is256x256": true,
+      "is192x192": true
     }
   ],
   "id": "ezafeh.kari.alumina",
@@ -28,3 +28,4 @@
     "business"
   ]
 }
+
