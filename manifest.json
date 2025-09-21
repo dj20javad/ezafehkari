@@ -7,23 +7,24 @@
   "scope": "/",
   "short_name": "Ezafeh Kari",
   "start_url": "/index.html",
-  "theme_color": "#00b3ff",
+  "theme_color": "#009bff",
   "icons": [
     {
-      "src": "https://ezafehkari.netlify.app/Logo.png"
+      "src": "https://ezafehkari.netlify.app/Logo.png",
+      "isSquare": false,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
     }
   ],
   "id": "ezafeh.kari.alumina",
   "description": "ثبت هوشمند اضافه کاری",
   "lang": "en",
-  "display_override": [
-    "standalone",
-    "window-controls-overlay"
-  ],
   "categories": [
     "business"
   ]
 }
-
-
-
