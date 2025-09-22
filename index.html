@@ -307,19 +307,7 @@
                 };
                 
                 // --- Excel Functions ---
-                const exportToExcel = () => {
-                    if (overtimeData.length === 0) return showError("هیچ داده‌ای برای خروجی گرفتن وجود ندارد.");
-                    const dataToExport = overtimeData.map(rec => ({
-                        'تاریخ': rec.date, 'نوع شیفت': shiftTypeMap[rec.shiftType] || '', 'جانشین': rec.successor || '',
-                        'ساعت شروع': rec.startTime, 'ساعت پایان': rec.endTime, 'توضیحات': rec.description || ''
-                    }));
-                    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                    const workbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(workbook, worksheet, "Sabegh-e Ezafekari");
-                    XLSX.writeFile(workbook, "Ezafekari.xlsx");
-                };
-
-                const importFromExcel = (event) => {
+const importFromExcel = (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
                     const reader = new FileReader();
@@ -328,18 +316,31 @@
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
                             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                            const importedJson = XLSX.utils.sheet_to_json(worksheet);
-                            if(importedJson.length === 0) return showError("فایل اکسل خالی است.");
+                            // Use {raw: false} to help with date parsing from Excel
+                            const importedJson = XLSX.utils.sheet_to_json(worksheet, {raw: false});
+                            if(importedJson.length === 0) return showModal("خطا","فایل اکسل خالی است.");
                             
                             const shiftTypeMapReverse = Object.fromEntries(Object.entries(shiftTypeMap).map(([k, v]) => [v, k]));
                             const currentDataMap = overtimeData.reduce((map, item) => (map[item.date] = item, map), {});
                             let importedCount = 0;
                             
                             importedJson.forEach(row => {
-                                const dateStr = String(row['تاریخ'] || '').trim();
-                                if(moment(dateStr, 'jYYYY/jMM/DD', true).isValid()) {
+                                let dateValue = row['تاریخ'];
+                                let dateStr = '';
+
+                                // Handle both numeric (Excel serial) and string dates
+                                if (typeof dateValue === 'number') {
+                                    // Excel's epoch starts on 1899-12-30. We subtract 1 to align.
+                                    const jsDate = new Date(1900, 0, dateValue - 1);
+                                    dateStr = moment(jsDate).locale('fa').format('YYYY/MM/DD');
+                                } else {
+                                    dateStr = String(dateValue || '').trim();
+                                }
+
+                                if(moment(dateStr, 'jYYYY/MM/DD', true).isValid()) {
                                     currentDataMap[dateStr] = {
-                                        date: dateStr, shiftType: shiftTypeMapReverse[row['نوع شیفت']] || 'holiday',
+                                        date: dateStr, 
+                                        shiftType: shiftTypeMapReverse[row['نوع شیفت']] || 'holiday',
                                         successor: String(row['جانشین'] || '').trim(), 
                                         startTime: String(row['ساعت شروع'] || '1').split(':')[0],
                                         endTime: String(row['ساعت پایان'] || '1').split(':')[0], 
@@ -354,8 +355,8 @@
                                saveData();
                                renderRecords();
                                showModal('موفق', `${importedCount} رکورد وارد شد.`);
-                            } else { showError("هیچ رکورد معتبری یافت نشد."); }
-                        } catch (err) { showError("خطا در پردازش فایل اکسل."); console.error(err); } 
+                            } else { showModal("خطا", "هیچ رکورد معتبری یافت نشد."); }
+                        } catch (err) { showModal("خطا", "خطا در پردازش فایل اکسل."); console.error(err); } 
                         finally { $('import-file').value = ''; }
                     };
                     reader.readAsArrayBuffer(file);
